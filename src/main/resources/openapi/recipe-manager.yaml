@@ -1,0 +1,554 @@
+openapi: 3.1.0
+info:
+  title: Recipe Management API
+  description: Simple API for managing recipes
+  version: '1.0.0'
+
+servers:
+  - url: http://localhost:8080/api
+    description: Local server
+
+tags:
+  - name: Recipes
+    description: Recipe management operations
+
+paths:
+  /recipes:
+    post:
+      tags:
+        - Recipes
+      summary: Create a new recipe
+      description: |
+        Creates and stores a new recipe in the system.
+        
+        **Validation Rules:**
+        - Recipe name must be unique
+        - Name must be 3-255 characters
+        - Instructions must be at least 10 characters
+        - Servings must be between 1-100
+        - Ingredients are optional but must have valid names when provided
+      operationId: addRecipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipeRequest'
+            examples:
+              vegetarianStirFry:
+                summary: Vegetarian Stir Fry Example
+                value:
+                  name: "Vegetable Stir Fry"
+                  description: "Quick and healthy stir fry"
+                  isVegetarian: true
+                  servings: 2
+                  instructions: "1. Heat oil in pan. 2. Add vegetables. 3. Stir fry for 10 minutes."
+                  ingredients:
+                    - name: "Broccoli"
+                      quantity: 200
+                      unit: "gr"
+                    - name: "Carrot"
+                      quantity: 100
+                      unit: "gr"
+              chickenCurry:
+                summary: Chicken Curry Example
+                value:
+                  name: "Chicken Curry"
+                  description: "Spicy Indian chicken curry"
+                  isVegetarian: false
+                  servings: 4
+                  instructions: "1. Marinate chicken. 2. Cook onions and spices. 3. Add chicken and simmer for 20 minutes."
+                  ingredients:
+                    - name: "Chicken"
+                      quantity: 500
+                      unit: "gr"
+                    - name: "Curry Powder"
+                      quantity: 2
+                      unit: "pcs"
+      responses:
+        '201':
+          description: Recipe created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+              examples:
+                createdRecipe:
+                  summary: Created Recipe Response
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    name: "Vegetable Stir Fry"
+                    description: "Quick and healthy stir fry"
+                    isVegetarian: true
+                    servings: 2
+                    instructions: "1. Heat oil in pan. 2. Add vegetables. 3. Stir fry for 10 minutes."
+                    ingredients:
+                      - name: "Broccoli"
+                        quantity: 200
+                        unit: "gr"
+                      - name: "Carrot"
+                        quantity: 100
+                        unit: "gr"
+                    createdAt: "2024-01-16T10:30:00Z"
+                    updatedAt: "2024-01-16T10:30:00Z"
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validationError:
+                  summary: Validation Error
+                  value:
+                    error:
+                      message: "Invalid input data"
+                      code: "VALIDATION_ERROR"
+                      timestamp: "2024-01-16T10:30:00Z"
+        '409':
+          description: Recipe with same name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateRecipe:
+                  summary: Duplicate Recipe Error
+                  value:
+                    error:
+                      message: "Recipe with name 'Vegetable Stir Fry' already exists"
+                      code: "DUPLICATE_RECIPE"
+                      timestamp: "2024-01-16T10:30:00Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Recipes
+      summary: Search and filter recipes
+      description: |
+        Retrieves recipes with advanced filtering capabilities and pagination support.
+        
+        **Available Filters:**
+        - `isVegetarian`: Boolean filter for vegetarian recipes
+        - `servings`: Exact number of servings
+        - `includeIngredients`: Array of ingredient names to filter by (can be specified multiple times)
+        - `excludeIngredients`: Array of ingredient names to exclude (can be specified multiple times)
+        - `instruction`: Full-text search within recipe instructions
+        
+        **Pagination:**
+        - `page`: Page number (1-indexed, default: 1)
+        - `limit`: Number of items per page (1-100, default: 20)
+        
+        **Usage Examples:**
+        - `GET /recipes?isVegetarian=true&page=1&limit=10`
+        - `GET /recipes?servings=4&page=2&limit=20`
+        - `GET /recipes?includeIngredients=chicken&includeIngredients=beef&page=1&limit=50`
+        - `GET /recipes?excludeIngredients=onion&page=1&limit=50`
+        - `GET /recipes?instruction=oven&page=3&limit=15`
+      operationId: getRecipes
+      parameters:
+        - name: isVegetarian
+          in: query
+          description: Filter vegetarian recipes
+          schema:
+            type: boolean
+        - name: servings
+          in: query
+          description: Filter by number of servings
+          schema:
+            type: integer
+            minimum: 1
+        - name: includeIngredients
+          in: query
+          description: |
+            Ingredient names to filter by.
+            Can be specified multiple times for multiple ingredients.
+            Recipe must contain at least one of the specified ingredients.
+            Case-insensitive search.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: [ "chicken", "beef" ]
+        - name: excludeIngredients
+          in: query
+          description: |
+            Ingredient names to exclude.
+            Can be specified multiple times for multiple ingredients.
+            Recipe must NOT contain any of the specified ingredients.
+            Case-insensitive search.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: [ "onion", "garlic" ]
+        - name: instruction
+          in: query
+          description: Full-text search within recipe instructions (case-insensitive)
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Paginated list of recipes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+              examples:
+                recipeList:
+                  summary: Paginated Recipe List
+                  value:
+                    data:
+                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                        name: "Vegetable Stir Fry"
+                        description: "Quick and healthy stir fry"
+                        isVegetarian: true
+                        servings: 2
+                        instructions: "1. Heat oil in pan. 2. Add vegetables. 3. Stir fry for 10 minutes."
+                        ingredients:
+                          - name: "Broccoli"
+                            quantity: 200
+                            unit: "gr"
+                          - name: "Carrot"
+                            quantity: 100
+                            unit: "gr"
+                        createdAt: "2024-01-16T10:30:00Z"
+                        updatedAt: "2024-01-16T10:30:00Z"
+                      - id: "223e4567-e89b-12d3-a456-426614174001"
+                        name: "Chicken Curry"
+                        description: "Spicy Indian chicken curry"
+                        isVegetarian: false
+                        servings: 4
+                        instructions: "1. Marinate chicken. 2. Cook onions and spices. 3. Add chicken and simmer."
+                        ingredients:
+                          - name: "Chicken"
+                            quantity: 500
+                            unit: "gr"
+                          - name: "Curry Powder"
+                            quantity: 2
+                            unit: "pcs"
+                        createdAt: "2024-01-17T14:20:00Z"
+                        updatedAt: "2024-01-17T14:20:00Z"
+                    pagination:
+                      page: 1
+                      limit: 20
+                      totalItems: 42
+                      totalPages: 3
+                      hasNext: true
+                      hasPrevious: false
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /recipes/{id}:
+    delete:
+      tags:
+        - Recipes
+      summary: Permanently delete a recipe
+      description: |
+        Removes a recipe from the system by its unique identifier.
+
+        **Important Notes:**
+        - This operation is irreversible
+        - All recipe data including ingredients will be permanently deleted
+        - Returns 204 No Content on successful deletion
+        - Returns 404 if the recipe ID doesn't exist
+      operationId: removeRecipe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 2
+      responses:
+        '204':
+          description: Recipe deleted successfully
+        '404':
+          description: Recipe not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  summary: Recipe Not Found
+                  value:
+                    error:
+                      message: "Recipe with ID 123e4567-e89b-12d3-a456-426614174000 not found"
+                      code: "NOT_FOUND"
+                      timestamp: "2024-01-16T10:30:00Z"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreateRecipeRequest:
+      type: object
+      required:
+        - name
+        - servings
+        - instructions
+        - isVegetarian
+        - ingredients
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 255
+          example: "Vegetable Stir Fry"
+          description: Recipe name (3-255 characters)
+        description:
+          type: string
+          minLength: 3
+          maxLength: 255
+          example: "Quick and healthy stir fry"
+          description: Recipe description (3-255 characters)
+          nullable: true
+        isVegetarian:
+          type: boolean
+          example: true
+          description: Whether the recipe is suitable for vegetarians
+        servings:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 2
+          description: Number of people the recipe serves (1-100)
+        instructions:
+          type: string
+          minLength: 10
+          maxLength: 3000
+          example: "1. Heat oil in pan. 2. Add vegetables. 3. Stir fry for 10 minutes."
+          description: Step-by-step cooking instructions (10-3000 characters)
+        ingredients:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/IngredientInput'
+          example:
+            - name: "Broccoli"
+              quantity: 200
+              unit: "gr"
+            - name: "Carrot"
+              quantity: 100
+              unit: "gr"
+          description: List of ingredients required for the recipe (1-50 items)
+
+    IngredientInput:
+      type: object
+      required:
+        - name
+        - quantity
+        - unit
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Broccoli"
+          description: Ingredient name (1-255 characters)
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          example: 200
+          description: Quantity of ingredient (1-10000)
+        unit:
+          type: string
+          enum:
+            - gr
+            - pcs
+          example: "gr"
+          description: Unit of measurement (only 'gr' for grams or 'pcs' for pieces allowed)
+
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          description: Unique recipe identifier
+        name:
+          type: string
+          example: "Vegetable Stir Fry"
+          description: Recipe name
+        description:
+          type: string
+          example: "Quick and healthy stir fry"
+          description: Recipe description
+          nullable: true
+        isVegetarian:
+          type: boolean
+          example: true
+          description: Whether the recipe is suitable for vegetarians
+        servings:
+          type: integer
+          example: 2
+          description: Number of people the recipe serves
+        instructions:
+          type: string
+          example: "1. Heat oil in pan. 2. Add vegetables. 3. Stir fry for 10 minutes."
+          description: Step-by-step cooking instructions
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+          example:
+            - name: "Broccoli"
+              quantity: 200
+              unit: "gr"
+            - name: "Carrot"
+              quantity: 100
+              unit: "gr"
+          description: List of ingredients in the recipe
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-16T10:30:00Z"
+          description: Recipe creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-16T10:30:00Z"
+          description: Recipe last update timestamp
+
+    Ingredient:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Broccoli"
+          description: Ingredient name
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          example: 200
+          description: Quantity of ingredient
+        unit:
+          type: string
+          enum:
+            - gr
+            - pcs
+          example: "gr"
+          description: Unit of measurement (only 'gr' for grams or 'pcs' for pieces)
+
+    RecipeListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Recipe'
+          description: List of recipes for the current page
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+          description: Pagination metadata
+
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+          description: Current page number (1-indexed)
+        limit:
+          type: integer
+          example: 20
+          description: Number of items per page
+        totalItems:
+          type: integer
+          example: 42
+          description: Total number of items across all pages
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Invalid input data"
+              description: Human-readable error message
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+              description: Error code identifier
+            timestamp:
+              type: string
+              format: date-time
+              example: "2024-01-16T10:30:00Z"
+              description: Error occurrence timestamp
+      examples:
+        - validationError:
+          summary: Validation Error
+          value:
+            error:
+              message: "Invalid input data"
+              code: "VALIDATION_ERROR"
+              timestamp: "2024-01-16T10:30:00Z"
+        - notFoundError:
+          summary: Not Found Error
+          value:
+            error:
+              message: "Resource not found"
+              code: "NOT_FOUND"
+              timestamp: "2024-01-16T10:30:00Z"
+        - duplicateRecipe:
+          summary: Duplicate Recipe Error
+          value:
+            error:
+              message: "Recipe with name 'Vegetable Stir Fry' already exists"
+              code: "DUPLICATE_RECIPE"
+              timestamp: "2024-01-16T10:30:00Z"
+        - serverError:
+          summary: Server Error
+          value:
+            error:
+              message: "Internal server error occurred"
+              code: "INTERNAL_SERVER_ERROR"
+              timestamp: "2024-01-16T10:30:00Z"

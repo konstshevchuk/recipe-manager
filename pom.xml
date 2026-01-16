@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.recipe.manager</groupId>
+    <artifactId>recipe-manager</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.9</version>
+    </parent>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>21</java.version>
+        <openapi-generator.version>7.1.0</openapi-generator.version>
+        <swagger.version>2.2.41</swagger.version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Swagger/OpenAPI annotations -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-models</artifactId>
+            <version>${swagger.version}</version>
+        </dependency>
+
+        <!-- SQL datastore -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- OpenAPI Code Generator Maven Plugin -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/openapi/recipe-manager.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <output>${project.build.directory}/generated-sources/openapi</output>
+                            <apiPackage>com.recipe.manager.controller.api</apiPackage>
+                            <modelPackage>com.recipe.manager.dto</modelPackage>
+                            <invokerPackage>com.recipe.manager.client</invokerPackage>
+
+                            <addCompileSourceRoot>true</addCompileSourceRoot>
+                            <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
+                            <skipOverwrite>false</skipOverwrite>  <!-- Add this -->
+
+                            <configOptions>
+                                <interfaceOnly>true</interfaceOnly>
+                                <useSpringBoot3>true</useSpringBoot3>
+                                <useJakartaEe>true</useJakartaEe>
+
+                                <!-- ALL false to disable tests -->
+                                <generateApiTests>false</generateApiTests>
+                                <generateModelTests>false</generateModelTests>
+                                <generateSupportingFiles>false</generateSupportingFiles>
+                                <generateApplication>false</generateApplication>
+                                <generateApiDocumentation>false</generateApiDocumentation>
+                                <generateModelDocumentation>false</generateModelDocumentation>
+
+                                <documentationProvider>none</documentationProvider>
+                                <useSpringdoc>false</useSpringdoc>
+
+                                <modelNameSuffix>DTO</modelNameSuffix>
+                                <dateLibrary>java8</dateLibrary>
+                                <useBeanValidation>true</useBeanValidation>
+                                <openApiNullable>false</openApiNullable>
+                            </configOptions>
+
+                            <library>spring-boot</library>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Add generated sources to compilation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.recipe.manager.boot.RecipeManagerLauncher</mainClass>
+                    <classifier>exec</classifier>
+                    <layout>JAR</layout>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>com.recipe.manager.boot.RecipeManagerLauncher</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>
