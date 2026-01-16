@@ -19,7 +19,8 @@ import java.util.List;
 @Entity
 @Table(name = "recipes", indexes = {
         @Index(name = "idx_recipe_is_vegetarian", columnList = "isVegetarian"),
-        @Index(name = "idx_recipe_serving", columnList = "serving")
+        @Index(name = "idx_recipe_serving", columnList = "serving"),
+        @Index(name = "idx_recipe_category", columnList = "category")
 })
 public class RecipeEntity {
 
@@ -32,12 +33,14 @@ public class RecipeEntity {
 
     @Column(nullable = false, length = 500)
     private String description;
+    
+    @Column
+    private String category;
 
     @Column(nullable = false, length = 5000)
     private String instructions;
 
-    @Column(nullable = false)
-    private Boolean isVegetarian;
+     private boolean isVegetarian;
 
     @Column(nullable = false)
     private Integer serving;
@@ -78,6 +81,14 @@ public class RecipeEntity {
         this.description = description;
     }
 
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public String getInstructions() {
         return instructions;
     }
@@ -86,11 +97,11 @@ public class RecipeEntity {
         this.instructions = instructions;
     }
 
-    public Boolean getVegeterian() {
+    public boolean getVegeterian() {
         return isVegetarian;
     }
 
-    public void setVegeterian(Boolean vegeterian) {
+    public void setVegeterian(boolean vegeterian) {
         isVegetarian = vegeterian;
     }
 

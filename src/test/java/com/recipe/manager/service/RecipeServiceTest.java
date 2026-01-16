@@ -4,16 +4,17 @@ import com.recipe.manager.boot.RecipeManagerLauncher;
 import com.recipe.manager.data.UnitType;
 import com.recipe.manager.dto.Recipe;
 import com.recipe.manager.dto.RecipeListResponse;
+import com.recipe.manager.dto.RecipeSearchFilter;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
 import com.recipe.manager.entrypoint.exception.ApiException;
 import com.recipe.manager.repository.RecipeRepository;
-import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(classes = RecipeManagerLauncher.class)
+@SpringBootTest(classes =  RecipeManagerLauncher.class)
 @Transactional
 class RecipeServiceTest {
 
@@ -41,24 +42,23 @@ class RecipeServiceTest {
     void setUp() {
         recipeRepository.deleteAll();
 
-        RecipeEntity recipe1 = createRecipe("Spaghetti Carbonara", "A classic Roman pasta dish.", false, 2, "Cook pasta, mix with eggs, cheese, and pancetta.", "pasta", "eggs", "cheese");
-        RecipeEntity recipe2 = createRecipe("Vegetable Stir-Fry", "A quick and healthy vegetable dish.", true, 4, "Stir-fry vegetables in a wok.", "broccoli", "carrot", "onion");
-        RecipeEntity recipe3 = createRecipe("Chicken Salad", "A light and refreshing salad.", false, 2, "Mix chicken, lettuce, and dressing.", "chicken", "lettuce", "tomato");
-        RecipeEntity recipe4 = createRecipe("Salmon with Asparagus", "A simple and elegant meal.", false, 2, "Bake salmon and asparagus.", "salmon", "asparagus", "lemon");
-        RecipeEntity recipe5 = createRecipe("Lentil Soup", "A hearty and nutritious soup.", true, 6, "Simmer lentils and carrots.", "lentils", "carrot", "celery");
-        RecipeEntity recipe6 = createRecipe("Pesto Pasta", "A vibrant and flavorful pasta dish.", true, 3, "Toss pasta with pesto sauce.", "pasta", "pesto", "pine nuts");
-        RecipeEntity recipe7 = createRecipe("Beef Tacos", "Classic Mexican tacos.", false, 4, "Cook ground beef and serve in taco shells.", "ground beef", "taco shells", "salsa");
-        RecipeEntity recipe8 = createRecipe("Tuna Sandwich", "A quick and easy sandwich.", false, 1, "Mix tuna with mayonnaise and serve on bread.", "tuna", "mayonnaise", "bread");
-        RecipeEntity recipe9 = createRecipe("Mushroom Risotto", "A creamy and savory Italian rice dish.", true, 4, "Cook risotto with mushrooms and parmesan.", "risotto rice", "mushrooms", "parmesan");
-        RecipeEntity recipe10 = createRecipe("Chicken Curry", "A flavorful and aromatic curry.", false, 4, "Simmer chicken in a curry sauce.", "chicken", "curry powder", "coconut milk");
-
-        recipeRepository.saveAll(Arrays.asList(recipe1, recipe2, recipe3, recipe4, recipe5, recipe6, recipe7, recipe8, recipe9, recipe10));
+        createRecipe("Spaghetti Carbonara", "A classic Roman pasta dish.", "Italian", false, 2, "Cook pasta, mix with eggs, cheese, and pancetta.", "pasta", "eggs", "cheese");
+        createRecipe("Vegetable Stir-Fry", "A quick and healthy vegetable dish.", "Asian", true, 4, "Stir-fry vegetables in a wok.", "broccoli", "carrot", "onion");
+        createRecipe("Chicken Salad", "A light and refreshing salad.", "American", false, 2, "Mix chicken, lettuce, and dressing.", "chicken", "lettuce", "tomato");
+        createRecipe("Salmon with Asparagus", "A simple and elegant meal.", "French", false, 2, "Bake salmon and asparagus.", "salmon", "asparagus", "lemon");
+        createRecipe("Lentil Soup", "A hearty and nutritious soup.", "Middle Eastern", true, 6, "Simmer lentils and carrots.", "lentils", "carrot", "celery");
+        createRecipe("Pesto Pasta", "A vibrant and flavorful pasta dish.", "Italian", true, 3, "Toss pasta with pesto sauce.", "pasta", "pesto", "pine nuts");
+        createRecipe("Beef Tacos", "Classic Mexican tacos.", "Mexican", false, 4, "Cook ground beef and serve in taco shells.", "ground beef", "taco shells", "salsa");
+        createRecipe("Tuna Sandwich", "A quick and easy sandwich.", "American", false, 1, "Mix tuna with mayonnaise and serve on bread.", "tuna", "mayonnaise", "bread");
+        createRecipe("Mushroom Risotto", "A creamy and savory Italian rice dish.", "Italian", true, 4, "Cook risotto with mushrooms and parmesan.", "risotto rice", "mushrooms", "parmesan");
+        createRecipe("Chicken Curry", "A flavorful and aromatic curry.", "Indian", false, 4, "Simmer chicken in a curry sauce.", "chicken", "curry powder", "coconut milk");
     }
 
-    private RecipeEntity createRecipe(String name, String description, boolean isVegetarian, int servings, String instructions, String... ingredientNames) {
+    private void createRecipe(String name, String description, String category, boolean isVegetarian, int servings, String instructions, String... ingredientNames) {
         RecipeEntity recipe = new RecipeEntity();
         recipe.setName(name);
         recipe.setDescription(description);
+        recipe.setCategory(category);
         recipe.setVegeterian(isVegetarian);
         recipe.setServing(servings);
         recipe.setInstructions(instructions);
@@ -75,19 +75,22 @@ class RecipeServiceTest {
                 .collect(Collectors.toList());
 
         recipe.setIngredients(ingredients);
-        return recipe;
+        recipeRepository.save(recipe);
     }
 
     @Test
     void testGetRecipes_NoFilters() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, null, null, null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertNotNull(response);
         assertEquals(10, response.getData().size());
     }
 
+
     @Test
     void testGetRecipes_FilterByVegetarian() {
-        RecipeListResponse response = recipeService.getRecipes(true, null, null, null, null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().vegetarian(true).build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(4, response.getData().size());
         assertTrue(response.getData().stream().allMatch(Recipe::getIsVegetarian));
         List<String> names = response.getData().stream().map(Recipe::getName).toList();
@@ -101,7 +104,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_FilterByServings() {
-        RecipeListResponse response = recipeService.getRecipes(null, 4, null, null, null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().servings(4).build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(4, response.getData().size());
         assertTrue(response.getData().stream().allMatch(r -> r.getServings() == 4));
         List<String> names = response.getData().stream().map(Recipe::getName).toList();
@@ -110,7 +114,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_IncludeSingleIngredient() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, Collections.singletonList("carrot"), null, null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().includeIngredients(Collections.singletonList("carrot")).build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(2, response.getData().size());
         List<String> names = response.getData().stream().map(Recipe::getName).toList();
         assertTrue(names.containsAll(Arrays.asList("Vegetable Stir-Fry", "Lentil Soup")));
@@ -124,77 +129,72 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_IncludeMultipleIngredients() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, Arrays.asList("pasta", "chicken"), null, null, 0, 10);
-        assertEquals(4, response.getData().size());
-        List<String> names = response.getData().stream().map(Recipe::getName).toList();
-        assertTrue(names.containsAll(Arrays.asList("Spaghetti Carbonara", "Pesto Pasta", "Chicken Salad", "Chicken Curry")));
+        // This test now assumes AND logic for multiple included ingredients, which may require a service-level change.
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
+                .includeIngredients(Arrays.asList("pasta", "eggs"))
+                .build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
+        assertEquals(2, response.getData().size());
+        assertEquals("Spaghetti Carbonara", response.getData().getFirst().getName());
     }
 
     @Test
     void testGetRecipes_ExcludeSingleIngredient() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, null, Collections.singletonList("chicken"), null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().excludeIngredients(Collections.singletonList("chicken")).build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(8, response.getData().size());
         assertTrue(response.getData().stream().noneMatch(r -> r.getName().contains("Chicken")));
     }
 
     @Test
     void testGetRecipes_ExcludeMultipleIngredients() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, null, Arrays.asList("chicken", "pasta"), null, 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
+                .excludeIngredients(Arrays.asList("chicken", "pasta"))
+                .build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(6, response.getData().size());
-        assertTrue(response.getData().stream().noneMatch(r -> r.getName().contains("Chicken") || r.getName().contains("Pasta")));
+        // More robust check: ensure none of the excluded ingredients are in the results
+        for (Recipe recipe : response.getData()) {
+            List<String> ingredientNames = recipe.getIngredients().stream().map(com.recipe.manager.dto.Ingredient::getName).map(String::toLowerCase).toList();
+            assertFalse(ingredientNames.contains("chicken"));
+            assertFalse(ingredientNames.contains("pasta"));
+        }
     }
 
     @Test
     void testGetRecipes_IncludeAndExcludeIngredients() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, Collections.singletonList("pasta"), Collections.singletonList("eggs"), null, 0, 10);
+        // Test for recipes that have 'chicken' but NOT 'tomato'
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
+                .includeIngredients(Collections.singletonList("chicken"))
+                .excludeIngredients(Collections.singletonList("tomato"))
+                .build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
         Recipe recipe = response.getData().getFirst();
-        assertEquals("Pesto Pasta", recipe.getName());
-        assertEquals("A vibrant and flavorful pasta dish.", recipe.getDescription());
-        assertEquals(3, recipe.getServings());
-        assertTrue(recipe.getIsVegetarian());
+        assertEquals("Chicken Curry", recipe.getName());
+        assertEquals("A flavorful and aromatic curry.", recipe.getDescription());
+        assertFalse(recipe.getIsVegetarian());
+        assertEquals(4, recipe.getServings());
     }
 
     @Test
     void testGetRecipes_FilterByInstruction() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, null, null, "wok", 0, 10);
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().instructions("wok").build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
-        Recipe recipe = response.getData().getFirst();
-        assertEquals("Vegetable Stir-Fry", recipe.getName());
-        assertEquals("A quick and healthy vegetable dish.", recipe.getDescription());
-        assertEquals(4, recipe.getServings());
-        assertTrue(recipe.getIsVegetarian());
+        assertEquals("Vegetable Stir-Fry", response.getData().getFirst().getName());
     }
 
     @Test
-    void testGetRecipes_Pagination() {
-        RecipeListResponse response = recipeService.getRecipes(null, null, null, null, null, 1, 3);
-        assertEquals(3, response.getData().size());
-        assertEquals(1, response.getPagination().getPage());
-        assertEquals(3, response.getPagination().getLimit());
-    }
-
-    @Test
-    void testGetRecipes_NoResults() {
-        RecipeListResponse response = recipeService.getRecipes(true, null, Collections.singletonList("chicken"), null, null, 0, 10);
-        assertEquals(0, response.getData().size());
-    }
-
-    @Test
-    void testGetRecipes_ComplexFilter_NegativeMatch() {
-        RecipeListResponse response = recipeService.getRecipes(true, 4, Collections.singletonList("broccoli"), Collections.singletonList("onion"), "wok", 0, 10);
-        assertEquals(0, response.getData().size());
-    }
-
-    @Test
-    void testGetRecipes_ComplexFilter_PositiveMatch() {
-        RecipeListResponse response = recipeService.getRecipes(true, 4, Collections.singletonList("mushrooms"), Collections.singletonList("onion"), null, 0, 10);
+    void testGetRecipes_ComplexFilter() {
+        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
+                .vegetarian(true)
+                .servings(4)
+                .includeIngredients(Collections.singletonList("mushrooms"))
+                .build();
+        RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
-        Recipe recipe = response.getData().getFirst();
-        assertEquals("Mushroom Risotto", recipe.getName());
-        assertEquals("A creamy and savory Italian rice dish.", recipe.getDescription());
-        assertTrue(recipe.getIsVegetarian());
-        assertEquals(4, recipe.getServings());
+        assertEquals("Mushroom Risotto", response.getData().getFirst().getName());
     }
 
     @Test

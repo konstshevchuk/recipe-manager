@@ -1,9 +1,9 @@
 package com.recipe.manager.service;
 
 import com.recipe.manager.dto.CreateRecipeRequest;
-import com.recipe.manager.dto.PaginationInfo;
 import com.recipe.manager.dto.Recipe;
 import com.recipe.manager.dto.RecipeListResponse;
+import com.recipe.manager.dto.RecipeSearchFilter;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
 import com.recipe.manager.entrypoint.exception.ApiErrorCode;
@@ -22,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,39 +56,39 @@ public class RecipeService {
         return recipeMapper.toDto(savedRecipe);
     }
 
-    public RecipeListResponse getRecipes(Boolean isVegetarian, Integer servings, List<String> includeIngredients, List<String> excludeIngredients, String instruction, Integer page, Integer limit) {
+    public RecipeListResponse getRecipes(RecipeSearchFilter filter) {
         Specification<RecipeEntity> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            if (isVegetarian != null) {
-                predicates.add(criteriaBuilder.equal(root.get("isVegetarian"), isVegetarian));
+            if (filter.getIsVegetarian() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("isVegetarian"), filter.getIsVegetarian()));
             }
 
-            if (servings != null) {
-                predicates.add(criteriaBuilder.equal(root.get("serving"), servings));
+            if (filter.getServings() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("serving"), filter.getServings()));
             }
 
-            if (instruction != null && !instruction.isEmpty()) {
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("instructions")), "%" + instruction.toLowerCase() + "%"));
+            if (StringUtils.hasText(filter.getInstructions())) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("instructions")), "%" + filter.getInstructions().toLowerCase() + "%"));
             }
 
-            if (includeIngredients != null && !includeIngredients.isEmpty()) {
+            if (filter.getIncludeIngredients() != null && !filter.getIncludeIngredients().isEmpty()) {
                 Join<RecipeEntity, IngredientEntity> ingredientJoin = root.join("ingredients");
                 List<Predicate> ingredientPredicates = new ArrayList<>();
-                for (String ingredient : includeIngredients) {
+                for (String ingredient : filter.getIncludeIngredients()) {
                     ingredientPredicates.add(criteriaBuilder.equal(criteriaBuilder.lower(ingredientJoin.get("name")), ingredient.toLowerCase()));
                 }
                 query.distinct(true);
                 predicates.add(criteriaBuilder.or(ingredientPredicates.toArray(new Predicate[0])));
             }
 
-            if (excludeIngredients != null && !excludeIngredients.isEmpty()) {
+            if (filter.getExcludeIngredients() != null && !filter.getExcludeIngredients().isEmpty()) {
                 Subquery<Long> subquery = query.subquery(Long.class);
                 Root<RecipeEntity> subRoot = subquery.from(RecipeEntity.class);
                 Join<RecipeEntity, IngredientEntity> subJoin = subRoot.join("ingredients");
 
                 List<Predicate> excludePredicates = new ArrayList<>();
-                for (String ingredient : excludeIngredients) {
+                for (String ingredient : filter.getExcludeIngredients()) {
                     excludePredicates.add(criteriaBuilder.equal(criteriaBuilder.lower(subJoin.get("name")), ingredient.toLowerCase()));
                 }
 
@@ -100,20 +101,10 @@ public class RecipeService {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
 
-        Pageable pageable = PageRequest.of(page != null ? page : 0, limit != null ? limit : 10);
+        Pageable pageable = PageRequest.of(filter.getPage() - 1, filter.getLimit());
         Page<RecipeEntity> recipePage = recipeRepository.findAll(spec, pageable);
 
-        RecipeListResponse response = new RecipeListResponse();
-        PaginationInfo paginationInfo = new PaginationInfo();
-
-        paginationInfo.setPage(recipePage.getNumber());
-        paginationInfo.setLimit(recipePage.getSize());
-        paginationInfo.setTotalItems((int) recipePage.getTotalElements());
-
-        response.setData(recipePage.getContent().stream().map(recipeMapper::toDto).collect(Collectors.toList()));
-        response.setPagination(paginationInfo);
-
-        return response;
+        return recipeMapper.map(recipePage, filter.getPage(), filter.getLimit(), recipePage.getTotalElements());
     }
 
     @Transactional

@@ -142,14 +142,14 @@ paths:
         
         **Pagination:**
         - `page`: Page number (1-indexed, default: 1)
-        - `limit`: Number of items per page (1-100, default: 20)
+        - `pageSize`: Number of items per page (1-100, default: 20)
         
         **Usage Examples:**
         - `GET /recipes?isVegetarian=true&page=1&limit=10`
-        - `GET /recipes?servings=4&page=2&limit=20`
-        - `GET /recipes?includeIngredients=chicken&includeIngredients=beef&page=1&limit=50`
-        - `GET /recipes?excludeIngredients=onion&page=1&limit=50`
-        - `GET /recipes?instruction=oven&page=3&limit=15`
+        - `GET /recipes?servings=4&page=2&pageSize=20`
+        - `GET /recipes?includeIngredients=chicken&includeIngredients=beef&page=1&pageSize=50`
+        - `GET /recipes?excludeIngredients=onion&page=1&pageSize=50`
+        - `GET /recipes?instruction=oven&page=3&pageSize=15`
       operationId: getRecipes
       parameters:
         - name: isVegetarian
@@ -204,7 +204,7 @@ paths:
             minimum: 1
             default: 1
           example: 1
-        - name: limit
+        - name: pageSize
           in: query
           description: Number of items per page
           schema:
@@ -495,12 +495,13 @@ components:
           type: integer
           example: 1
           description: Current page number (1-indexed)
-        limit:
+        pageSize:
           type: integer
           example: 20
           description: Number of items per page
         totalItems:
           type: integer
+          format: int64
           example: 42
           description: Total number of items across all pages
 

@@ -44,12 +44,13 @@ public class RecipeMapper {
         return recipe;
     }
 
-    public  RecipeListResponse map(Page<RecipeEntity> recipePage, int page, int limit) {
+    public RecipeListResponse map(Page<RecipeEntity> recipePage, int page, int pageSize, long totalCount) {
         RecipeListResponse response = new RecipeListResponse();
         response.setData(recipePage.getContent().stream().map(this::toDto).collect(Collectors.toList()));
         PaginationInfo paginationInfo = new PaginationInfo();
         paginationInfo.setPage(page);
-        paginationInfo.setLimit(limit);
+        paginationInfo.setPageSize(pageSize);
+        paginationInfo.setTotalItems(totalCount);
         response.setPagination(paginationInfo);
         return response;
     }
