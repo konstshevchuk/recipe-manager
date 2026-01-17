@@ -126,7 +126,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-    get:
+  /recipes/search:
+    post:
       tags:
         - Recipes
       summary: Search and filter recipes
@@ -145,74 +146,14 @@ paths:
         - `pageSize`: Number of items per page (1-100, default: 20)
         
         **Usage Examples:**
-        - `GET /recipes?isVegetarian=true&page=1&limit=10`
-        - `GET /recipes?servings=4&page=2&pageSize=20`
-        - `GET /recipes?includeIngredients=chicken&includeIngredients=beef&page=1&pageSize=50`
-        - `GET /recipes?excludeIngredients=onion&page=1&pageSize=50`
-        - `GET /recipes?instruction=oven&page=3&pageSize=15`
-      operationId: getRecipes
-      parameters:
-        - name: isVegetarian
-          in: query
-          description: Filter vegetarian recipes
-          schema:
-            type: boolean
-        - name: servings
-          in: query
-          description: Filter by number of servings
-          schema:
-            type: integer
-            minimum: 1
-        - name: includeIngredients
-          in: query
-          description: |
-            Ingredient names to filter by.
-            Can be specified multiple times for multiple ingredients.
-            Recipe must contain at least one of the specified ingredients.
-            Case-insensitive search.
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-          example: [ "chicken", "beef" ]
-        - name: excludeIngredients
-          in: query
-          description: |
-            Ingredient names to exclude.
-            Can be specified multiple times for multiple ingredients.
-            Recipe must NOT contain any of the specified ingredients.
-            Case-insensitive search.
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-          example: [ "onion", "garlic" ]
-        - name: instruction
-          in: query
-          description: Full-text search within recipe instructions (case-insensitive)
-          schema:
-            type: string
-        - name: page
-          in: query
-          description: Page number (1-indexed)
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-          example: 1
-        - name: pageSize
-          in: query
-          description: Number of items per page
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-          example: 20
+        - `POST /recipes/search` with body `{"isVegetarian": true, "page": 1, "limit": 10}`
+      operationId: searchRecipes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeSearchRequest'
       responses:
         '200':
           description: Paginated list of recipes
@@ -374,7 +315,54 @@ components:
             - name: "Carrot"
               quantity: 100
               unit: "gr"
-          description: List of ingredients required for the recipe (1-50 items)
+          description: "List of ingredients for the recipe. MUST contain between 1 and 50 items."
+
+    RecipeSearchRequest:
+      type: object
+      properties:
+        isVegetarian:
+          type: boolean
+          description: Filter vegetarian recipes
+        servings:
+          type: integer
+          minimum: 1
+          description: Filter by number of servings
+        includeIngredients:
+          type: array
+          items:
+            type: string
+          description: Ingredient names to filter by
+        excludeIngredients:
+          type: array
+          items:
+            type: string
+          description: Ingredient names to exclude
+        instruction:
+          type: string
+          minLength: 5
+          maxLength: 255
+          description: Full-text search within recipe instructions
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Page number (1-indexed)
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Number of items per page
+        orderBy:
+          type: string
+          enum: [name, createdAt, servings]
+          default: createdAt
+          description: Field to sort by
+        direction:
+          type: string
+          enum: [ASC, DESC]
+          default: DESC
+          description: Sort direction
 
     IngredientInput:
       type: object
@@ -545,6 +533,13 @@ components:
             error:
               message: "Recipe with name 'Vegetable Stir Fry' already exists"
               code: "DUPLICATE_RECIPE"
+              timestamp: "2024-01-16T10:30:00Z"
+        - serverError:
+          summary: Server Error
+          value:
+            error:
+              message: "Internal server error occurred"
+              code: "INTERNAL_SERVER_ERROR"
               timestamp: "2024-01-16T10:30:00Z"
         - serverError:
           summary: Server Error

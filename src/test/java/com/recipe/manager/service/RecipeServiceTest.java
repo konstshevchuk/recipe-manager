@@ -4,16 +4,15 @@ import com.recipe.manager.boot.RecipeManagerLauncher;
 import com.recipe.manager.data.UnitType;
 import com.recipe.manager.dto.Recipe;
 import com.recipe.manager.dto.RecipeListResponse;
-import com.recipe.manager.dto.RecipeSearchFilter;
+import com.recipe.manager.dto.RecipeSearchRequest;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
-import com.recipe.manager.entrypoint.exception.ApiException;
+import com.recipe.manager.entrypoint.exception.RecipeNotFoundException;
 import com.recipe.manager.repository.RecipeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -28,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(classes =  RecipeManagerLauncher.class)
+@SpringBootTest(classes = RecipeManagerLauncher.class)
 @Transactional
 class RecipeServiceTest {
 
@@ -80,7 +79,7 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_NoFilters() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertNotNull(response);
         assertEquals(10, response.getData().size());
@@ -89,7 +88,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_FilterByVegetarian() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().vegetarian(true).build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setIsVegetarian(true);
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(4, response.getData().size());
         assertTrue(response.getData().stream().allMatch(Recipe::getIsVegetarian));
@@ -104,7 +104,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_FilterByServings() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().servings(4).build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setServings(4);
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(4, response.getData().size());
         assertTrue(response.getData().stream().allMatch(r -> r.getServings() == 4));
@@ -114,7 +115,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_IncludeSingleIngredient() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().includeIngredients(Collections.singletonList("carrot")).build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setIncludeIngredients(Collections.singletonList("carrot"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(2, response.getData().size());
         List<String> names = response.getData().stream().map(Recipe::getName).toList();
@@ -129,18 +131,18 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_IncludeMultipleIngredients() {
-        // This test now assumes AND logic for multiple included ingredients, which may require a service-level change.
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
-                .includeIngredients(Arrays.asList("pasta", "eggs"))
-                .build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setIncludeIngredients(Arrays.asList("pasta", "eggs"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(2, response.getData().size());
-        assertEquals("Spaghetti Carbonara", response.getData().getFirst().getName());
+        assertEquals("Pesto Pasta", response.getData().getFirst().getName());
+        assertEquals("Spaghetti Carbonara", response.getData().get(1).getName());
     }
 
     @Test
     void testGetRecipes_ExcludeSingleIngredient() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().excludeIngredients(Collections.singletonList("chicken")).build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setExcludeIngredients(Collections.singletonList("chicken"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(8, response.getData().size());
         assertTrue(response.getData().stream().noneMatch(r -> r.getName().contains("Chicken")));
@@ -148,9 +150,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_ExcludeMultipleIngredients() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
-                .excludeIngredients(Arrays.asList("chicken", "pasta"))
-                .build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setExcludeIngredients(Arrays.asList("chicken", "pasta"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(6, response.getData().size());
         // More robust check: ensure none of the excluded ingredients are in the results
@@ -164,10 +165,9 @@ class RecipeServiceTest {
     @Test
     void testGetRecipes_IncludeAndExcludeIngredients() {
         // Test for recipes that have 'chicken' but NOT 'tomato'
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
-                .includeIngredients(Collections.singletonList("chicken"))
-                .excludeIngredients(Collections.singletonList("tomato"))
-                .build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setIncludeIngredients(Collections.singletonList("chicken"));
+        filter.setExcludeIngredients(Collections.singletonList("tomato"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
         Recipe recipe = response.getData().getFirst();
@@ -179,7 +179,8 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_FilterByInstruction() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder().instructions("wok").build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setInstruction("wok");
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
         assertEquals("Vegetable Stir-Fry", response.getData().getFirst().getName());
@@ -187,11 +188,10 @@ class RecipeServiceTest {
 
     @Test
     void testGetRecipes_ComplexFilter() {
-        RecipeSearchFilter filter = new RecipeSearchFilter.Builder()
-                .vegetarian(true)
-                .servings(4)
-                .includeIngredients(Collections.singletonList("mushrooms"))
-                .build();
+        RecipeSearchRequest filter = new RecipeSearchRequest();
+        filter.setIsVegetarian(true);
+        filter.setServings(4);
+        filter.setIncludeIngredients(Collections.singletonList("mushrooms"));
         RecipeListResponse response = recipeService.getRecipes(filter);
         assertEquals(1, response.getData().size());
         assertEquals("Mushroom Risotto", response.getData().getFirst().getName());
@@ -211,13 +211,12 @@ class RecipeServiceTest {
 
     @Test
     void testRemoveRecipe_NotFound() {
-        Long nonExistentId = 999L;
+        Long nonExistentId = -1L;
 
-        ApiException exception = assertThrows(ApiException.class, () -> {
+        RecipeNotFoundException exception = assertThrows(RecipeNotFoundException.class, () -> {
             recipeService.removeRecipe(nonExistentId);
         });
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatus());
         assertEquals("Recipe not found", exception.getMessage());
     }
 }

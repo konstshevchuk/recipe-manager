@@ -3,11 +3,10 @@ package com.recipe.manager.service;
 import com.recipe.manager.dto.CreateRecipeRequest;
 import com.recipe.manager.dto.Recipe;
 import com.recipe.manager.dto.RecipeListResponse;
-import com.recipe.manager.dto.RecipeSearchFilter;
+import com.recipe.manager.dto.RecipeSearchRequest;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
-import com.recipe.manager.entrypoint.exception.ApiErrorCode;
-import com.recipe.manager.entrypoint.exception.ApiException;
+import com.recipe.manager.entrypoint.exception.RecipeNotFoundException;
 import com.recipe.manager.repository.RecipeRepository;
 import com.recipe.manager.service.mapper.IngredientMapper;
 import com.recipe.manager.service.mapper.RecipeMapper;
@@ -18,8 +17,8 @@ import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -56,7 +55,7 @@ public class RecipeService {
         return recipeMapper.toDto(savedRecipe);
     }
 
-    public RecipeListResponse getRecipes(RecipeSearchFilter filter) {
+    public RecipeListResponse getRecipes(RecipeSearchRequest filter) {
         Specification<RecipeEntity> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -68,8 +67,8 @@ public class RecipeService {
                 predicates.add(criteriaBuilder.equal(root.get("serving"), filter.getServings()));
             }
 
-            if (StringUtils.hasText(filter.getInstructions())) {
-                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("instructions")), "%" + filter.getInstructions().toLowerCase() + "%"));
+            if (StringUtils.hasText(filter.getInstruction())) {
+                predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("instructions")), "%" + filter.getInstruction().toLowerCase() + "%"));
             }
 
             if (filter.getIncludeIngredients() != null && !filter.getIncludeIngredients().isEmpty()) {
@@ -101,16 +100,20 @@ public class RecipeService {
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
 
-        Pageable pageable = PageRequest.of(filter.getPage() - 1, filter.getLimit());
+        String orderBy = filter.getOrderBy() != null ? filter.getOrderBy().getValue() : "createdAt";
+        Sort.Direction direction = filter.getDirection() != null ? Sort.Direction.valueOf(filter.getDirection().getValue()) : Sort.Direction.DESC;
+
+        Sort sort = Sort.by(direction, orderBy);
+        Pageable pageable = PageRequest.of(filter.getPage() - 1, filter.getPageSize(), sort);
         Page<RecipeEntity> recipePage = recipeRepository.findAll(spec, pageable);
 
-        return recipeMapper.map(recipePage, filter.getPage(), filter.getLimit(), recipePage.getTotalElements());
+        return recipeMapper.map(recipePage, filter.getPage(), filter.getPageSize(), recipePage.getTotalElements());
     }
 
     @Transactional
     public void removeRecipe(Long id) {
         if (!recipeRepository.existsById(id)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Recipe not found", ApiErrorCode.NotFound);
+            throw new RecipeNotFoundException("Recipe not found");
         }
         recipeRepository.deleteById(id);
     }

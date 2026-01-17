@@ -1,8 +1,11 @@
 package com.recipe.manager.dto;
 
+import org.springframework.data.domain.Sort;
+
 import java.util.List;
 
 public class RecipeSearchFilter {
+
 
     private final Integer servings;
     private final List<String> includeIngredients;
@@ -10,7 +13,9 @@ public class RecipeSearchFilter {
     private final String instructions;
     private final Boolean isVegetarian;
     private final int page;
-    private final int limit;
+    private final int pageSize;
+    private final String orderBy;
+    private final Sort.Direction direction;
 
     private RecipeSearchFilter(Builder builder) {
         this.servings = builder.servings;
@@ -19,7 +24,9 @@ public class RecipeSearchFilter {
         this.instructions = builder.instructions;
         this.isVegetarian = builder.isVegetarian;
         this.page = builder.page;
-        this.limit = builder.limit;
+        this.pageSize = builder.pageSize;
+        this.orderBy = builder.orderBy;
+        this.direction = builder.direction;
     }
 
 
@@ -47,8 +54,16 @@ public class RecipeSearchFilter {
         return page;
     }
 
-    public int getLimit() {
-        return limit;
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public String getOrderBy() {
+        return orderBy;
+    }
+
+    public Sort.Direction getDirection() {
+        return direction;
     }
 
     public static class Builder {
@@ -58,7 +73,9 @@ public class RecipeSearchFilter {
         private String instructions;
         private Boolean isVegetarian;
         private int page = 1;
-        private int limit = 20;
+        private int pageSize = 20;
+        private String orderBy = "createdAt";
+        private Sort.Direction direction = Sort.Direction.DESC;
 
         public Builder servings(Integer servings) {
             this.servings = servings;
@@ -92,9 +109,28 @@ public class RecipeSearchFilter {
             return this;
         }
 
-        public Builder limit(Integer limit) {
-            if (limit != null) {
-                this.limit = limit;
+        public Builder pageSize(Integer pageSize) {
+            if (pageSize != null) {
+                this.pageSize = pageSize;
+            }
+            return this;
+        }
+
+        public Builder orderBy(String orderBy) {
+            if (orderBy != null) {
+                this.orderBy = orderBy;
+            }
+            return this;
+        }
+
+        public Builder direction(String direction) {
+            if (direction != null) {
+                try {
+                    this.direction = Sort.Direction.fromString(direction);
+                } catch (IllegalArgumentException e) {
+                    // Fallback to default if invalid
+                    this.direction = Sort.Direction.DESC;
+                }
             }
             return this;
         }

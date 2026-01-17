@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -39,6 +41,12 @@ public class BaseExceptionHandler {
         return new ResponseEntity<>(e.getApiErrorResponse(), e.getHttpStatus());
     }
 
+    @ExceptionHandler({RecipeNotFoundException.class})
+    public ResponseEntity<ApiErrorResponse> handleApiException(RecipeNotFoundException e) {
+        logger.debug("{}", e.getMessage());
+        return new ResponseEntity<>(new ApiErrorResponse(e.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidFormatException(HttpMessageNotReadableException ex) {
         String errorMessage = "123";
@@ -49,6 +57,16 @@ public class BaseExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         String message = String.format("Invalid parameter value [%s] for '%s'", ex.getValue(), ex.getName());
         return ResponseEntity.badRequest().body(new ApiErrorResponse("invalid value", message));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ValidationErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentNotValidException e) {
+        ObjectError error = e.getBindingResult().getAllErrors().getFirst();
+        String fieldName = null;
+        if (error instanceof FieldError fieldError) {
+            fieldName = fieldError.getField();
+        }
+        return ResponseEntity.badRequest().body(new ValidationErrorResponse(fieldName, error.getDefaultMessage()));
     }
 
     @ExceptionHandler({Exception.class})
