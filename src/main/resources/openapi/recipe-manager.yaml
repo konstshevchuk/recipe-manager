@@ -166,7 +166,7 @@ paths:
                   summary: Paginated Recipe List
                   value:
                     data:
-                      - id: "123e4567-e89b-12d3-a456-426614174000"
+                      - id: 1
                         name: "Vegetable Stir Fry"
                         description: "Quick and healthy stir fry"
                         isVegetarian: true

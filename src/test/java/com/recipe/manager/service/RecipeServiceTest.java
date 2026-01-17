@@ -2,11 +2,14 @@ package com.recipe.manager.service;
 
 import com.recipe.manager.boot.RecipeManagerLauncher;
 import com.recipe.manager.data.UnitType;
+import com.recipe.manager.dto.CreateRecipeRequest;
+import com.recipe.manager.dto.IngredientInput;
 import com.recipe.manager.dto.Recipe;
 import com.recipe.manager.dto.RecipeListResponse;
 import com.recipe.manager.dto.RecipeSearchRequest;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
+import com.recipe.manager.entrypoint.exception.RecipeDuplicateException;
 import com.recipe.manager.entrypoint.exception.RecipeNotFoundException;
 import com.recipe.manager.repository.RecipeRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -79,6 +81,32 @@ class RecipeServiceTest {
         recipe.setIngredients(ingredients);
         recipeRepository.save(recipe);
     }
+
+    @Test
+    void addRecipe_shouldThrowException_whenRecipeNameExists() {
+        // Given a recipe with a specific name already exists
+        String existingName = "Spaghetti Carbonara";
+
+        // And a request to create a new recipe with the same name
+        CreateRecipeRequest request = new CreateRecipeRequest();
+        request.setName(existingName);
+        request.setServings(2);
+        request.setIsVegetarian(false);
+        request.setInstructions("Some new instructions.");
+        IngredientInput ingredient = new IngredientInput();
+        ingredient.setName("New Ingredient");
+        ingredient.setQuantity(1);
+        ingredient.setUnit(IngredientInput.UnitEnum.PCS);
+        request.setIngredients(Collections.singletonList(ingredient));
+
+        // When attempting to add the recipe, Then an exception should be thrown
+        RecipeDuplicateException exception = assertThrows(RecipeDuplicateException.class, () -> {
+            recipeService.addRecipe(request);
+        });
+
+        assertEquals("Recipe already exists", exception.getMessage());
+    }
+
 
     @Test
     void testGetRecipes_NoFilters() {

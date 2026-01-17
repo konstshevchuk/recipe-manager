@@ -6,6 +6,7 @@ import com.recipe.manager.dto.RecipeListResponse;
 import com.recipe.manager.dto.RecipeSearchRequest;
 import com.recipe.manager.entity.IngredientEntity;
 import com.recipe.manager.entity.RecipeEntity;
+import com.recipe.manager.entrypoint.exception.RecipeDuplicateException;
 import com.recipe.manager.entrypoint.exception.RecipeNotFoundException;
 import com.recipe.manager.repository.RecipeRepository;
 import com.recipe.manager.service.mapper.IngredientMapper;
@@ -14,6 +15,8 @@ import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 @Service
 public class RecipeService {
 
+    private static final Logger log = LoggerFactory.getLogger(RecipeService.class);
     private final RecipeRepository recipeRepository;
     private final RecipeMapper recipeMapper;
     private final IngredientMapper ingredientMapper;
@@ -42,6 +46,12 @@ public class RecipeService {
 
     @Transactional
     public Recipe addRecipe(CreateRecipeRequest createRecipeRequest) {
+
+        if (recipeRepository.findByName(createRecipeRequest.getName()).isPresent()) {
+            log.error("Recipe already exists with a name = {}", createRecipeRequest.getName());
+            throw new RecipeDuplicateException("Recipe already exists");
+        }
+
         RecipeEntity recipeEntity = recipeMapper.toEntity(createRecipeRequest);
 
         List<IngredientEntity> ingredientEntities = createRecipeRequest.getIngredients().stream()
@@ -52,6 +62,8 @@ public class RecipeService {
         recipeEntity.setIngredients(ingredientEntities);
 
         RecipeEntity savedRecipe = recipeRepository.save(recipeEntity);
+
+        log.info("Created new recipe with ID={}", savedRecipe.getId());
         return recipeMapper.toDto(savedRecipe);
     }
 
@@ -116,5 +128,6 @@ public class RecipeService {
             throw new RecipeNotFoundException("Recipe not found");
         }
         recipeRepository.deleteById(id);
+        log.info("deleted recipe with ID={}", id);
     }
 }

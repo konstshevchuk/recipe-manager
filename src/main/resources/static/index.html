@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h1, h2 { color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input, select, textarea, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #007bff; color: white; cursor: pointer; border: none; }
+        button:hover { background-color: #0056b3; }
+        #request, #response { background-color: #e9ecef; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+        .ingredient-item { display: flex; gap: 5px; align-items: center; }
+    </style>
+</head>
+<body>
+
+<h1>Recipe Manager</h1>
+
+<!-- Add Recipe Section -->
+<div class="container">
+    <h2>Add a New Recipe</h2>
+    <form id="add-recipe-form">
+        <input type="text" id="add-name" placeholder="Recipe Name" value="Sample Pancake Recipe" required>
+        <textarea id="add-description" placeholder="Description">A quick and easy recipe for fluffy pancakes.</textarea>
+        <select id="add-isVegetarian" required>
+            <option value="true" selected>Vegetarian</option>
+            <option value="false">Not Vegetarian</option>
+        </select>
+        <input type="number" id="add-servings" placeholder="Servings (e.g., 4)" value="2" required>
+        <textarea id="add-instructions" placeholder="Instructions" required>1. Mix flour, eggs, and milk.
+2. Pour onto a hot pan.
+3. Flip when bubbly.</textarea>
+
+        <div id="ingredients-container">
+            <div class="ingredient-item">
+                <input type="text" class="ingredient-name" placeholder="Ingredient Name" value="Flour" required>
+                <input type="number" class="ingredient-quantity" placeholder="Quantity" value="200" required>
+                <select class="ingredient-unit" required>
+                    <option value="gr" selected>grams (gr)</option>
+                    <option value="pcs">pieces (pcs)</option>
+                </select>
+            </div>
+             <div class="ingredient-item">
+                <input type="text" class="ingredient-name" placeholder="Ingredient Name" value="Eggs" required>
+                <input type="number" class="ingredient-quantity" placeholder="Quantity" value="2" required>
+                <select class="ingredient-unit" required>
+                    <option value="gr">grams (gr)</option>
+                    <option value="pcs" selected>pieces (pcs)</option>
+                </select>
+            </div>
+        </div>
+        <button type="button" id="add-ingredient-btn">Add Another Ingredient</button>
+
+        <button type="submit">Add Recipe</button>
+    </form>
+</div>
+
+<!-- Search Recipes Section -->
+<div class="container">
+    <h2>Search Recipes</h2>
+    <form id="search-recipes-form">
+        <select id="search-isVegetarian">
+            <option value="">Any</option>
+            <option value="true">Vegetarian</option>
+            <option value="false">Not Vegetarian</option>
+        </select>
+        <input type="number" id="search-servings" placeholder="Filter by Servings">
+        <input type="text" id="search-include" placeholder="Include Ingredients (comma-separated)">
+        <input type="text" id="search-exclude" placeholder="Exclude Ingredients (comma-separated)">
+        <input type="text" id="search-instruction" placeholder="Search in Instructions">
+        <button type="submit">Search Recipes</button>
+    </form>
+</div>
+
+<!-- Delete Recipe Section -->
+<div class="container">
+    <h2>Delete a Recipe</h2>
+    <form id="delete-recipe-form">
+        <input type="number" id="delete-id" placeholder="Recipe ID to Delete" required>
+        <button type="submit">Delete Recipe</button>
+    </form>
+</div>
+
+<!-- Request Section -->
+<div class="container">
+    <h2>API Request</h2>
+    <pre id="request"></pre>
+</div>
+
+<!-- Response Section -->
+<div class="container">
+    <h2>API Response</h2>
+    <pre id="response"></pre>
+</div>
+
+<script>
+    const requestEl = document.getElementById('request');
+    const responseEl = document.getElementById('response');
+
+    // --- Add Ingredient Logic ---
+    document.getElementById('add-ingredient-btn').addEventListener('click', () => {
+        const container = document.getElementById('ingredients-container');
+        const newItem = document.createElement('div');
+        newItem.classList.add('ingredient-item');
+        newItem.innerHTML = `
+            <input type="text" class="ingredient-name" placeholder="Ingredient Name" required>
+            <input type="number" class="ingredient-quantity" placeholder="Quantity" required>
+            <select class="ingredient-unit" required>
+                <option value="gr">grams (gr)</option>
+                <option value="pcs">pieces (pcs)</option>
+            </select>
+        `;
+        container.appendChild(newItem);
+    });
+
+    // --- Add Recipe Form Submission ---
+    document.getElementById('add-recipe-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const ingredients = [];
+        document.querySelectorAll('.ingredient-item').forEach(item => {
+            const name = item.querySelector('.ingredient-name').value;
+            const quantity = item.querySelector('.ingredient-quantity').value;
+            const unit = item.querySelector('.ingredient-unit').value;
+            if (name && quantity && unit) {
+                ingredients.push({ name, quantity: parseInt(quantity), unit });
+            }
+        });
+
+        const recipeData = {
+            name: document.getElementById('add-name').value,
+            description: document.getElementById('add-description').value,
+            isVegetarian: document.getElementById('add-isVegetarian').value === 'true',
+            servings: parseInt(document.getElementById('add-servings').value),
+            instructions: document.getElementById('add-instructions').value,
+            ingredients: ingredients
+        };
+
+        const requestBody = JSON.stringify(recipeData, null, 2);
+        requestEl.textContent = requestBody;
+        responseEl.textContent = ''; // Clear previous response
+
+        try {
+            const res = await fetch('/recipes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: requestBody
+            });
+            const data = await res.json();
+            responseEl.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            responseEl.textContent = `Error: ${error.message}`;
+        }
+    });
+
+    // --- Search Recipes Form Submission ---
+    document.getElementById('search-recipes-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const searchData = {};
+        const isVegetarian = document.getElementById('search-isVegetarian').value;
+        if (isVegetarian) searchData.isVegetarian = isVegetarian === 'true';
+
+        const servings = document.getElementById('search-servings').value;
+        if (servings) searchData.servings = parseInt(servings);
+
+        const include = document.getElementById('search-include').value;
+        if (include) searchData.includeIngredients = include.split(',').map(s => s.trim());
+
+        const exclude = document.getElementById('search-exclude').value;
+        if (exclude) searchData.excludeIngredients = exclude.split(',').map(s => s.trim());
+
+        const instruction = document.getElementById('search-instruction').value;
+        if (instruction) searchData.instruction = instruction;
+
+        const requestBody = JSON.stringify(searchData, null, 2);
+        requestEl.textContent = requestBody;
+        responseEl.textContent = ''; // Clear previous response
+
+        try {
+            const res = await fetch('/recipes/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: requestBody
+            });
+            const data = await res.json();
+            responseEl.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+            responseEl.textContent = `Error: ${error.message}`;
+        }
+    });
+
+    // --- Delete Recipe Form Submission ---
+    document.getElementById('delete-recipe-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const recipeId = document.getElementById('delete-id').value;
+        if (!recipeId) return;
+
+        requestEl.textContent = `DELETE /recipes/${recipeId}`;
+        responseEl.textContent = ''; // Clear previous response
+
+        try {
+            const res = await fetch(`/recipes/${recipeId}`, {
+                method: 'DELETE'
+            });
+            if (res.status === 204) {
+                responseEl.textContent = `Recipe with ID ${recipeId} deleted successfully.`;
+            } else {
+                const data = await res.json();
+                responseEl.textContent = JSON.stringify(data, null, 2);
+            }
+        } catch (error) {
+            responseEl.textContent = `Error: ${error.message}`;
+        }
+    });
+</script>
+
+</body>
+</html>

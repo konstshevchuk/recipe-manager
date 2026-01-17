@@ -8,6 +8,7 @@ import com.recipe.manager.entity.RecipeEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
 
 @Component
@@ -41,6 +42,7 @@ public class RecipeMapper {
         recipe.setIngredients(entity.getIngredients().stream()
                 .map(ingredientMapper::map)
                 .collect(Collectors.toList()));
+        recipe.setCreatedAt(OffsetDateTime.ofInstant(entity.getCreatedAt(), OffsetDateTime.now().getOffset()));
         return recipe;
     }
 

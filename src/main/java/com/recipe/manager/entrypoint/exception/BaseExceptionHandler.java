@@ -42,15 +42,16 @@ public class BaseExceptionHandler {
     }
 
     @ExceptionHandler({RecipeNotFoundException.class})
-    public ResponseEntity<ApiErrorResponse> handleApiException(RecipeNotFoundException e) {
+    public ResponseEntity<ApiErrorResponse> handleRecipeNotFoundException(RecipeNotFoundException e) {
         logger.debug("{}", e.getMessage());
-        return new ResponseEntity<>(new ApiErrorResponse(e.getMessage()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new ApiErrorResponse(e.getMessage(), "ReceiptNotFound"), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidFormatException(HttpMessageNotReadableException ex) {
-        String errorMessage = "123";
-        return ResponseEntity.badRequest().body(new ApiErrorResponse(errorMessage, ApiErrorCode.InvalidParameter.name()));
+
+    @ExceptionHandler({RecipeDuplicateException.class})
+    public ResponseEntity<ApiErrorResponse> handleRecipeDuplicateException(RecipeDuplicateException e) {
+        logger.debug("{}", e.getMessage());
+        return new ResponseEntity<>(new ApiErrorResponse(e.getMessage(), "DuplicateReceipt"), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
