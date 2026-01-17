@@ -46,23 +46,22 @@ class RecipeServiceTest {
     void setUp() {
         recipeRepository.deleteAll();
 
-        createRecipe("Spaghetti Carbonara", "A classic Roman pasta dish.", "Italian", false, 2, "Cook pasta, mix with eggs, cheese, and pancetta.", "pasta", "eggs", "cheese");
-        createRecipe("Vegetable Stir-Fry", "A quick and healthy vegetable dish.", "Asian", true, 4, "Stir-fry vegetables in a wok.", "broccoli", "carrot", "onion");
-        createRecipe("Chicken Salad", "A light and refreshing salad.", "American", false, 2, "Mix chicken, lettuce, and dressing.", "chicken", "lettuce", "tomato");
-        createRecipe("Salmon with Asparagus", "A simple and elegant meal.", "French", false, 2, "Bake salmon and asparagus.", "salmon", "asparagus", "lemon");
-        createRecipe("Lentil Soup", "A hearty and nutritious soup.", "Middle Eastern", true, 6, "Simmer lentils and carrots.", "lentils", "carrot", "celery");
-        createRecipe("Pesto Pasta", "A vibrant and flavorful pasta dish.", "Italian", true, 3, "Toss pasta with pesto sauce.", "pasta", "pesto", "pine nuts");
-        createRecipe("Beef Tacos", "Classic Mexican tacos.", "Mexican", false, 4, "Cook ground beef and serve in taco shells.", "ground beef", "taco shells", "salsa");
-        createRecipe("Tuna Sandwich", "A quick and easy sandwich.", "American", false, 1, "Mix tuna with mayonnaise and serve on bread.", "tuna", "mayonnaise", "bread");
-        createRecipe("Mushroom Risotto", "A creamy and savory Italian rice dish.", "Italian", true, 4, "Cook risotto with mushrooms and parmesan.", "risotto rice", "mushrooms", "parmesan");
-        createRecipe("Chicken Curry", "A flavorful and aromatic curry.", "Indian", false, 4, "Simmer chicken in a curry sauce.", "chicken", "curry powder", "coconut milk");
+        createRecipe("Spaghetti Carbonara", "A classic Roman pasta dish.", false, 2, "Cook pasta, mix with eggs, cheese, and pancetta.", "pasta", "eggs", "cheese");
+        createRecipe("Vegetable Stir-Fry", "A quick and healthy vegetable dish.", true, 4, "Stir-fry vegetables in a wok.", "broccoli", "carrot", "onion");
+        createRecipe("Chicken Salad", "A light and refreshing salad.", false, 2, "Mix chicken, lettuce, and dressing.", "chicken", "lettuce", "tomato");
+        createRecipe("Salmon with Asparagus", "A simple and elegant meal.", false, 2, "Bake salmon and asparagus.", "salmon", "asparagus", "lemon");
+        createRecipe("Lentil Soup", "A hearty and nutritious soup.", true, 6, "Simmer lentils and carrots.", "lentils", "carrot", "celery");
+        createRecipe("Pesto Pasta", "A vibrant and flavorful pasta dish.", true, 3, "Toss pasta with pesto sauce.", "pasta", "pesto", "pine nuts");
+        createRecipe("Beef Tacos", "Classic Mexican tacos.", false, 4, "Cook ground beef and serve in taco shells.", "ground beef", "taco shells", "salsa");
+        createRecipe("Tuna Sandwich", "A quick and easy sandwich.", false, 1, "Mix tuna with mayonnaise and serve on bread.", "tuna", "mayonnaise", "bread");
+        createRecipe("Mushroom Risotto", "A creamy and savory Italian rice dish.", true, 4, "Cook risotto with mushrooms and parmesan.", "risotto rice", "mushrooms", "parmesan");
+        createRecipe("Chicken Curry", "A flavorful and aromatic curry.", false, 4, "Simmer chicken in a curry sauce.", "chicken", "curry powder", "coconut milk");
     }
 
-    private void createRecipe(String name, String description, String category, boolean isVegetarian, int servings, String instructions, String... ingredientNames) {
+    private void createRecipe(String name, String description, boolean isVegetarian, int servings, String instructions, String... ingredientNames) {
         RecipeEntity recipe = new RecipeEntity();
         recipe.setName(name);
         recipe.setDescription(description);
-        recipe.setCategory(category);
         recipe.setVegeterian(isVegetarian);
         recipe.setServing(servings);
         recipe.setInstructions(instructions);

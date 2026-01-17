@@ -118,8 +118,6 @@ mvnw.cmd
 .git/
 .gitignore
 
-# Documentation
-README.md
 CHANGELOG.md
 
 # Package Files #

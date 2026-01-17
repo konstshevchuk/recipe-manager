@@ -33,9 +33,6 @@ public class RecipeEntity {
 
     @Column(nullable = false, length = 500)
     private String description;
-    
-    @Column
-    private String category;
 
     @Column(nullable = false, length = 5000)
     private String instructions;
@@ -79,14 +76,6 @@ public class RecipeEntity {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(String category) {
-        this.category = category;
     }
 
     public String getInstructions() {

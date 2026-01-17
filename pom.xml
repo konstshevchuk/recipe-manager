@@ -142,23 +142,15 @@
                 </executions>
             </plugin>
 
-
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.recipe.manager.boot.RecipeManagerLauncher</mainClass>
-                    <classifier>exec</classifier>
-                    <layout>JAR</layout>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
+                            <goal>build-info</goal>
                             <goal>repackage</goal>
                         </goals>
-                        <configuration>
-                            <mainClass>com.recipe.manager.boot.RecipeManagerLauncher</mainClass>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

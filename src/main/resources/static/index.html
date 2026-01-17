@@ -142,7 +142,7 @@
 
         const requestBody = JSON.stringify(recipeData, null, 2);
         requestEl.textContent = requestBody;
-        responseEl.textContent = ''; // Clear previous response
+        responseEl.textContent = 'Sending...';
 
         try {
             const res = await fetch('/recipes', {
@@ -150,8 +150,14 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: requestBody
             });
-            const data = await res.json();
-            responseEl.textContent = JSON.stringify(data, null, 2);
+
+            const statusLine = `Status: ${res.status} ${res.statusText}\n\n`;
+            try {
+                const data = await res.json();
+                responseEl.textContent = statusLine + JSON.stringify(data, null, 2);
+            } catch (e) {
+                responseEl.textContent = statusLine + "(No content)";
+            }
         } catch (error) {
             responseEl.textContent = `Error: ${error.message}`;
         }
@@ -179,7 +185,7 @@
 
         const requestBody = JSON.stringify(searchData, null, 2);
         requestEl.textContent = requestBody;
-        responseEl.textContent = ''; // Clear previous response
+        responseEl.textContent = 'Sending...';
 
         try {
             const res = await fetch('/recipes/search', {
@@ -187,8 +193,14 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: requestBody
             });
-            const data = await res.json();
-            responseEl.textContent = JSON.stringify(data, null, 2);
+
+            const statusLine = `Status: ${res.status} ${res.statusText}\n\n`;
+            try {
+                const data = await res.json();
+                responseEl.textContent = statusLine + JSON.stringify(data, null, 2);
+            } catch (e) {
+                responseEl.textContent = statusLine + "(No content)";
+            }
         } catch (error) {
             responseEl.textContent = `Error: ${error.message}`;
         }
@@ -201,17 +213,24 @@
         if (!recipeId) return;
 
         requestEl.textContent = `DELETE /recipes/${recipeId}`;
-        responseEl.textContent = ''; // Clear previous response
+        responseEl.textContent = 'Sending...';
 
         try {
             const res = await fetch(`/recipes/${recipeId}`, {
                 method: 'DELETE'
             });
+
+            const statusLine = `Status: ${res.status} ${res.statusText}\n\n`;
+
             if (res.status === 204) {
-                responseEl.textContent = `Recipe with ID ${recipeId} deleted successfully.`;
+                responseEl.textContent = statusLine + `Recipe with ID ${recipeId} deleted successfully.`;
             } else {
-                const data = await res.json();
-                responseEl.textContent = JSON.stringify(data, null, 2);
+                try {
+                    const data = await res.json();
+                    responseEl.textContent = statusLine + JSON.stringify(data, null, 2);
+                } catch (e) {
+                    responseEl.textContent = statusLine + "(No content)";
+                }
             }
         } catch (error) {
             responseEl.textContent = `Error: ${error.message}`;
