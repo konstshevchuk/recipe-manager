@@ -13,6 +13,9 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "ingredients", indexes = {
@@ -37,6 +40,10 @@ public class IngredientEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recipe_id")
     private RecipeEntity recipe;
+
+    @Column(name = "created_at")
+    @CreationTimestamp
+    private Instant createdAt;
 
     public Long getId() {
         return id;
@@ -76,5 +83,13 @@ public class IngredientEntity {
 
     public void setRecipe(RecipeEntity recipe) {
         this.recipe = recipe;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }

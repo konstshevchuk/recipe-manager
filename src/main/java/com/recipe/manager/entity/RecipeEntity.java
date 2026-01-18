@@ -20,7 +20,6 @@ import java.util.List;
 @Table(name = "recipes", indexes = {
         @Index(name = "idx_recipe_is_vegetarian", columnList = "isVegetarian"),
         @Index(name = "idx_recipe_serving", columnList = "serving"),
-        @Index(name = "idx_recipe_category", columnList = "category")
 })
 public class RecipeEntity {
 
