@@ -17,6 +17,7 @@ It provides REST endpoints to create, search, and delete recipes.
 
 - Java 21
 - Maven
+- Docker
 
 ### Spring Boot version 3.5.9 - version 4.0.1 has conflict issue with swagger.core jackson version
 
