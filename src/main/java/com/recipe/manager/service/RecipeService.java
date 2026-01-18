@@ -67,6 +67,8 @@ public class RecipeService {
         return recipeMapper.toDto(savedRecipe);
     }
 
+    // Super slow query. Never use it in production!!!
+    // Use full text search engines like ElasticSearch
     public RecipeListResponse getRecipes(RecipeSearchRequest filter) {
         Specification<RecipeEntity> spec = (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -122,6 +124,7 @@ public class RecipeService {
         return recipeMapper.map(recipePage, filter.getPage(), filter.getPageSize(), recipePage.getTotalElements());
     }
 
+    //Hard delete. Soft delete would require more logic to handle
     @Transactional
     public void removeRecipe(Long id) {
         if (!recipeRepository.existsById(id)) {
